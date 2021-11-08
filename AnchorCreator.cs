@@ -19,7 +19,8 @@ public class AnchorCreator : MonoBehaviour
         }
         s_Hits.Clear();
         anchorDic.Clear();
-        trackableDic.Clear();
+        trackableList.Clear();
+        raycastHitDic.Clear();
         labelsOfAnchors.Clear();
     }
 
@@ -30,8 +31,10 @@ public class AnchorCreator : MonoBehaviour
         GameObject cameraImage = GameObject.Find("Camera Image");
         phoneARCamera = cameraImage.GetComponent<PhoneARCamera>();
     }
-
-    // here we'll place the plane anchoring code
+    
+    /*
+     * here we'll place the plane anchoring code
+     */
     ARAnchor CreateAnchor(in ARRaycastHit hit)
     {
 
@@ -49,24 +52,58 @@ public class AnchorCreator : MonoBehaviour
         }
     }
     
-    //
+    /*
+     * Info log
+     */
     public void hitsToAnchorLogger(ARRaycastHit hit, BoundingBox outline)
     {
         Debug.Log("Managing an hit");
         Debug.Log("Hit:" + hit.hitType);
         Debug.Log("outline label:" + outline.Label);
     }
-
+    
+    /*
+     * 
+     */
     public bool alreadyInAnchorList(BoundingBox outline)
     {
         return labelsOfAnchors.Contains(outline.Label);
     }
     
+    /*
+     * trabableDic is a list of <ARTrackable, anchor> tuples
+     * check if the passed ARTrackable is already on this dic 
+     */
+    public bool alreadyInTrackableDic(ARRaycastHit hit)
+    {
+        ARTrackable trackable = hit.trackable;
+        ScreenLog.Log("CHECKING TRACKABLE!!");
+        return raycastHitDic.ContainsKey(hit);
+    }
+    
+    // Search the trackable list 
+    public bool trackableAlreadyUsed(ARTrackable trackable)
+    {
+        return trackableList.Contains(trackable);
+    }
+
+    // 
+    public BoundingBox returnOutlineFromAnchor(ARAnchor anchor)
+    {
+        return anchorDic[anchor];
+    }
+
+    public ARAnchor returnAnchorFromTrackable(ARTrackable trackable)
+    {
+        ScreenLog.Log("RETURN ANCHOR FROM TRACKABLE");
+        return trackableDic[trackable];
+    }
+    
 
     /*
      * Creates a new anchor on the passed position
-     * Opens the "new rule element" panel if no anchor is present in that position 
-     * Otherwise, opens the "edit rule element" panel
+     * opens the "edit rule element" panel if the outline label is used and on that trackable there is an anchor
+     * otherwise, opens the "new rule element" panel 
      */
     private bool Pos2AnchorNew(float x, float y, BoundingBox outline, ARRaycastHit hit)
     {
@@ -75,7 +112,8 @@ public class AnchorCreator : MonoBehaviour
         anchorObj_mesh.text = $"{outline.Label}: {(int)(outline.Confidence * 100)}%";
         //TextMesh anchorObj = GameObject.Find("New Text").GetComponent<TextMesh>();
 
-        if (alreadyInAnchorList(outline)) // && there is an anchor on touch: how to get it?
+        //if (alreadyInAnchorList(outline) && alreadyInRaycastHitDic(hit)) 
+        if (alreadyInAnchorList(outline) && trackableAlreadyUsed(hit.trackable)) 
         {
             //Load the edit rule element from the RuleElementCanvas game object 
             Debug.Log("anchor already exists: load the edit rule element canvas");
@@ -105,8 +143,12 @@ public class AnchorCreator : MonoBehaviour
                 // Remember the anchor so we can remove it later.
                 ARTrackable hitted = hit.trackable;
                 anchorDic.Add(anchor, outline);
-                // Also remember the hitted trackable.
+                // Also remember the raycast hit with the associated anchor
+                //raycastHitDic.Add(hit, anchor);
+                // and the hitted trackable.
+                trackableList.Add(hitted);
                 trackableDic.Add(hitted, anchor);
+
                 Debug.Log($"DEBUG: Current number of anchors {anchorDic.Count}.");
                 return true;
             }
@@ -124,10 +166,10 @@ public class AnchorCreator : MonoBehaviour
     public bool checkReturnConditions()
     {
         //Return if there is no touch input
-        //if (Input.touchCount == 0)
-        //{ 
-            //return true;
-        //}
+        if (Input.touchCount == 0)
+        { 
+            return true;
+        }
         
         //Return if the touch is over an UI element 
         foreach (Touch touchLoop in Input.touches)
@@ -147,12 +189,15 @@ public class AnchorCreator : MonoBehaviour
         return false;
     }
 
-    // if a touch is detected: 
-    // get the detection list
-    // check if there is an object anchored in the position
-    //     if yes, check if there is also a detection
-    //            if not, open edit
-    // if not, open new  
+    /*
+     * if a touch is detected && it hits a trackable: 
+     *   check if there is an object anchored in the position
+     *     if yes, open the edit element panel & return
+     *   check if an object is currenctly detected 
+     *     if yes, check if there is an object anchord on that position 
+     *       if yes, open edit element panel
+     *       if no, open new element panel
+     */
     void Update()
     {
         if (checkReturnConditions()){
@@ -174,21 +219,8 @@ public class AnchorCreator : MonoBehaviour
             return; 
         }
 
-        ScreenLog.Log("GET A TOUCH: NOW I CHECK OUTLINES");
-
-        //int detectedObjects = camera2.boxSavedOutlines.Count(); //this is idiotic: a list in ARPlace... have the "count" method, but here no.
-        //ScreenLog.Log("DETECTED OBJS:");
-        //ScreenLog.Log(detectedObjects.ToString());
-        //if (detectedObjects == 0) { return; }
-        
-        // we only have 1 detection at time
-        //BoundingBox nearer = camera2.boxSavedOutlines[0];
-        //how to get the object nearer to the touch?
-        //camera2.permanentlyStoredDetections.Add(nearer);
-       
-        // Perform the raycast, we want all trackables
-        if (m_RaycastManager.Raycast(touch.position, s_Hits, TrackableType.All))
-        //if (m_RaycastManager.Raycast(Input.GetTouch(0).position, s_Hits, TrackableType.All)) //This does not return hits!!
+        // Perform the raycast, we want all the trackables
+        if (m_RaycastManager.Raycast(touch.position, s_Hits, trackableTypes)) //last arg is instead of TrackableType.All, because we don't want to capture the PlaneEstimated: too imprecise!
         {
             // Only returns true if there is at least one hit
             // Raycast hits are sorted by distance, so the first one will be the closest hit.
@@ -197,11 +229,28 @@ public class AnchorCreator : MonoBehaviour
                 var hit = s_Hits[0];
                 var hitPose = s_Hits[0].pose;
                 ScreenLog.Log("RAYCAST HIT SOMETHING!!!" + hit.hitType);
-
+                
                 // If something is hitted, before all test if it is an already placed anchor. 
-                // Check in trackableDic !!!!
-                //TODO
-                // In this case, there is no need to all the code below: just load the editElement panel.
+                //if (alreadyInTrackableDic(hit))
+                if (trackableAlreadyUsed(hit.trackable))
+                {
+                    // In this case open the edit rule element panel and return
+                    if (!NewElementScript.getIsOpen() && !EditElementScript.getIsOpen())
+                    {
+                        ScreenLog.Log("RAYCAST HIT AN ALREADY USED TRACKABLE && EDIT PANEL NOT OPEN!!!");
+                        //TODO Something does not work here: the edit element panel is not opened!!
+                        //retreive the trackable anchor from the hit
+                        ARAnchor myAnchor = returnAnchorFromTrackable(hit.trackable);
+                        //retrieve the outline linked to that trackable
+                        ScreenLog.Log("RETREIVED ARANCHOR!!!!");
+                        BoundingBox myBoundingBox = returnOutlineFromAnchor(myAnchor);
+                        ScreenLog.Log("RETREIVED BOUNDINGBOX!!!!");
+                        ScreenLog.Log(myBoundingBox.Label);
+                        EditElementScript.editElement(myBoundingBox);
+                        EditElementScript.setIsOpen(true);
+                    }
+                    return;
+                }
                 
                 // create anchor for new bounding boxes
                 foreach (var outline in boxSavedOutlines)
@@ -231,29 +280,34 @@ public class AnchorCreator : MonoBehaviour
                     }
                 }
             }
-            else
-            {
-                ScreenLog.Log("RAYCAST GET NO HITS!");
-            }
         }
     }
 
     // Reference to logging UI element in the canvas
     public UnityEngine.UI.Text Log;
-
+    
+    // List for labels of objects with an anchor placed
     public List<string> labelsOfAnchors = new List<string>();
+    
+    // List for trackabels already used (anchor is placed on them)
+    //Useless, because the trackableDic already contains all the trackables 
+    //TODO remove and change references and methods to use trackableDic
+    public List<ARTrackable> trackableList = new List<ARTrackable>();
     
     // List for raycast hits is re-used by raycast manager
     static List<ARRaycastHit> s_Hits = new List<ARRaycastHit>();
     
-    // stores the anchor inserted into the environment with the associated boundingbox & trackable
-    // (feature point, plane, anchor, ... see https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@4.1/api/UnityEngine.XR.ARFoundation.ARTrackable.html)
+    // stores the anchor inserted into the environment with the associated boundingbox 
     IDictionary<ARAnchor, BoundingBox> anchorDic = new Dictionary<ARAnchor, BoundingBox>();
-    // Se in ARRaycast HIT c'è anche il plane/feature point, non importa fare un dic a parte 
-    // per loro ma si può aggiungere ARRaycast come terzo args di questo dic
 
-    // stores the anchor inserted into the environment withh the associated plane
+    // stores the anchor inserted into the environment withh the associated trackable
+    // (feature point, planeWithinPolygon, ... )
     IDictionary<ARTrackable, ARAnchor> trackableDic = new Dictionary<ARTrackable, ARAnchor>();
+
+    // stores the raycasthit with the associated anchor
+    // There is no need to also store the trackable (see https://docs.unity3d.com/Packages/com.unity.xr.arfoundation@4.1/api/UnityEngine.XR.ARFoundation.ARTrackable.html))
+    // because it is stored in the .hit property of the raycastHit
+    IDictionary<ARRaycastHit, ARAnchor> raycastHitDic = new Dictionary<ARRaycastHit, ARAnchor>();
 
     // from PhoneARCamera
     private List<BoundingBox> boxSavedOutlines;
@@ -270,5 +324,6 @@ public class AnchorCreator : MonoBehaviour
     public ARAnchorManager m_AnchorManager;
 
     // Raycast against planes and feature points
-    const TrackableType trackableTypes = TrackableType.Planes | TrackableType.FeaturePoint;
+    // Generic planes are not included because they detect the sloppy estimatedPlanes
+    const TrackableType trackableTypes = TrackableType.FeaturePoint | TrackableType.PlaneWithinPolygon | TrackableType.PlaneWithinBounds;
 }
