@@ -101,9 +101,6 @@ public class PhoneARCamera : MonoBehaviour
     // lock model when its inferencing a frame
     private bool isDetecting = false;
     
-    // labels of element permanently added to anchors 
-    //public List<BoundingBox> permanentlyStoredDetections = new List<BoundingBox>();
-
     // list of labels detected across frames
     public List<String> saveLabels = new List<String>();
 
@@ -173,17 +170,15 @@ public class PhoneARCamera : MonoBehaviour
     // Called when the refresh button on screen is pressed
     public void OnRefresh()
     {
-        //ScreenLog.Log("DEBUG: onRefresh, removing anchors and boundingboxes");
+        ScreenLog.Log("DEBUG: onRefresh, removing anchors and boundingboxes");
         localization = false;
         staticNum = 0;
         // clear bounding box containers
         boxSavedOutlines.Clear();
         boxOutlines.Clear();
         // clear anchor
-        AnchorCreator anchorCreator = FindObjectOfType<AnchorCreator>(); //????? a che serve??
-        anchorCreator.RemoveAllAnchors(); // mi sembra che funzioni allo stesso modo commentato e non
-        // Clean the ... 
-        //permanentlyStoredDetections.Clear();
+        AnchorCreator anchorCreator = FindObjectOfType<AnchorCreator>(); 
+        anchorCreator.RemoveAllAnchors();
     }
         
         /*

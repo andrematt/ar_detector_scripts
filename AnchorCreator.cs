@@ -12,7 +12,7 @@ public class AnchorCreator : MonoBehaviour
 {
     public void RemoveAllAnchors()
     {
-        Debug.Log($"DEBUG: Removing all anchors ({anchorDic.Count})");
+        //ScreenLog.Log($"DEBUG: Removing all anchors ({anchorDic.Count})");
         foreach (var anchor in anchorDic)
         {
             Destroy(anchor.Key.gameObject);
@@ -20,6 +20,7 @@ public class AnchorCreator : MonoBehaviour
         s_Hits.Clear();
         anchorDic.Clear();
         trackableList.Clear();
+        trackableDic.Clear();
         raycastHitDic.Clear();
         labelsOfAnchors.Clear();
     }
@@ -34,10 +35,11 @@ public class AnchorCreator : MonoBehaviour
     
     /*
      * here we'll place the plane anchoring code
+     * Try first a plane (easier to retreive with a tap)
      */
     ARAnchor CreateAnchor(in ARRaycastHit hit)
     {
-
+        
         // If we hit a plane, try to "attach" the anchor to the plane
         if (hit.trackable is ARPlane plane)
         {
@@ -104,15 +106,15 @@ public class AnchorCreator : MonoBehaviour
      * Creates a new anchor on the passed position
      * opens the "edit rule element" panel if the outline label is used and on that trackable there is an anchor
      * otherwise, opens the "new rule element" panel 
+     * Problem: if something is placed on a feature point and it disappear, it is no more retreivable!
      */
     private bool Pos2AnchorNew(float x, float y, BoundingBox outline, ARRaycastHit hit)
     {
         // GameObject anchorObj = m_RaycastManager.raycastPrefab;
         // TextMesh anchorObj_mesh = anchorObj.GetComponent<TextMesh>();
         anchorObj_mesh.text = $"{outline.Label}: {(int)(outline.Confidence * 100)}%";
-        //TextMesh anchorObj = GameObject.Find("New Text").GetComponent<TextMesh>();
 
-        //if (alreadyInAnchorList(outline) && alreadyInRaycastHitDic(hit)) 
+        //TextMesh anchorObj = GameObject.Find("New Text").GetComponent<TextMesh>();
         if (alreadyInAnchorList(outline) && trackableAlreadyUsed(hit.trackable)) 
         {
             //Load the edit rule element from the RuleElementCanvas game object 
@@ -127,6 +129,8 @@ public class AnchorCreator : MonoBehaviour
         }
         else
         {
+            //if (!alreadyInAnchorList(outline))
+            //{ //There can be duplicate objects: just not on the same trackable!!!
             // Create a new anchor
             var anchor = CreateAnchor(hit);
             if (anchor)
@@ -152,12 +156,10 @@ public class AnchorCreator : MonoBehaviour
                 Debug.Log($"DEBUG: Current number of anchors {anchorDic.Count}.");
                 return true;
             }
-            else
-            {
-                Debug.Log("DEBUG: Error creating anchor");
-                return false;
-            }
         }
+        ScreenLog.Log("Anchor NOT created");
+        return false;
+        //}
     }
     
     /*
@@ -191,12 +193,10 @@ public class AnchorCreator : MonoBehaviour
 
     /*
      * if a touch is detected && it hits a trackable: 
-     *   check if there is an object anchored in the position
+     *   check if the trackable is already used
      *     if yes, open the edit element panel & return
      *   check if an object is currenctly detected 
-     *     if yes, check if there is an object anchord on that position 
-     *       if yes, open edit element panel
-     *       if no, open new element panel
+     *     if yes, open the new element panel 
      */
     void Update()
     {
@@ -230,22 +230,19 @@ public class AnchorCreator : MonoBehaviour
                 var hitPose = s_Hits[0].pose;
                 ScreenLog.Log("RAYCAST HIT SOMETHING!!!" + hit.hitType);
                 
-                // If something is hitted, before all test if it is an already placed anchor. 
+                // If something is hitted, before all test if an anchor has already been placed here. 
                 //if (alreadyInTrackableDic(hit))
                 if (trackableAlreadyUsed(hit.trackable))
                 {
                     // In this case open the edit rule element panel and return
                     if (!NewElementScript.getIsOpen() && !EditElementScript.getIsOpen())
                     {
-                        ScreenLog.Log("RAYCAST HIT AN ALREADY USED TRACKABLE && EDIT PANEL NOT OPEN!!!");
-                        //TODO Something does not work here: the edit element panel is not opened!!
+                        //ScreenLog.Log("RAYCAST HIT AN ALREADY USED TRACKABLE && EDIT PANEL NOT OPEN!");
                         //retreive the trackable anchor from the hit
                         ARAnchor myAnchor = returnAnchorFromTrackable(hit.trackable);
                         //retrieve the outline linked to that trackable
-                        ScreenLog.Log("RETREIVED ARANCHOR!!!!");
                         BoundingBox myBoundingBox = returnOutlineFromAnchor(myAnchor);
-                        ScreenLog.Log("RETREIVED BOUNDINGBOX!!!!");
-                        ScreenLog.Log(myBoundingBox.Label);
+                        //ScreenLog.Log("RETREIVED BOUNDINGBOX! ", myBoundingBox.Label);
                         EditElementScript.editElement(myBoundingBox);
                         EditElementScript.setIsOpen(true);
                     }
@@ -325,5 +322,7 @@ public class AnchorCreator : MonoBehaviour
 
     // Raycast against planes and feature points
     // Generic planes are not included because they detect the sloppy estimatedPlanes
-    const TrackableType trackableTypes = TrackableType.FeaturePoint | TrackableType.PlaneWithinPolygon | TrackableType.PlaneWithinBounds;
+    //const TrackableType trackableTypes = TrackableType.FeaturePoint | TrackableType.PlaneWithinPolygon | TrackableType.PlaneWithinBounds;
+    const TrackableType trackableTypes = TrackableType.Planes;
+    //const TrackableType trackableTypes = TrackableType.FeaturePoint | TrackableType.Planes;
 }
