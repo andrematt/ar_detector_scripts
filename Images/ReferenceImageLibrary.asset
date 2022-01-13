@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848409ee8ba454f42a5ddff137688a27, type: 3}
+  m_Name: ReferenceImageLibrary
+  m_EditorClassIdentifier: 
+  m_GuidLow: 5754804337511996572
+  m_GuidHigh: 4419385301343513503
+  m_Images:
+  - m_SerializedGuid:
+      m_GuidLow: 5754956819605135859
+      m_GuidHigh: 3400180869491034557
+    m_SerializedTextureGuid:
+      m_GuidLow: 7986037763171480041
+      m_GuidHigh: 5641919163040016233
+    m_Size: {x: 0, y: 0}
+    m_SpecifySize: 0
+    m_Name: apollo
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5244452408212849396
+      m_GuidHigh: 2024404740805303195
+    m_SerializedTextureGuid:
+      m_GuidLow: 7887063009826690487
+      m_GuidHigh: 17102801729388182282
+    m_Size: {x: 0, y: 0}
+    m_SpecifySize: 0
+    m_Name: BeatingHeart
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5267540624183858696
+      m_GuidHigh: 15924894488366185119
+    m_SerializedTextureGuid:
+      m_GuidLow: 14547818613816395569
+      m_GuidHigh: 13141558684626443912
+    m_Size: {x: 0, y: 0}
+    m_SpecifySize: 0
+    m_Name: HumanHeart
+    m_Texture: {fileID: 0}

@@ -1,11 +1,13 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
 
 /**
  * Orient the AR text towards the camera
  */ 
-public class NewText: MonoBehaviour
+public class RotateARPanel : MonoBehaviour
 {
-
     Camera cameraToLookAt;
 
     // Use this for initialization
@@ -18,6 +20,7 @@ public class NewText: MonoBehaviour
     void LateUpdate()
     {
         transform.LookAt(cameraToLookAt.transform);
-        transform.rotation = Quaternion.LookRotation(cameraToLookAt.transform.forward);
+        Vector3 lookAt = cameraToLookAt.transform.forward;
+        transform.rotation = Quaternion.LookRotation(lookAt);
     }
 }

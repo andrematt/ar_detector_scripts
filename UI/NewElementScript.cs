@@ -42,8 +42,9 @@ public class NewElementScript : MonoBehaviour
 
     public static void newElement(BoundingBox outline)
     {
+
         newCanvasObject.enabled = true;
-        string myText = "New rule element:" + outline.Label;
+        string myText = "New rule element:"+ outline.Label;
         Text textElement = GameObject.Find("NewRuleElementText").GetComponent<Text>();
         textElement.text = "";
         textElement.text = myText;

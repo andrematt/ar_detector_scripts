@@ -16,20 +16,7 @@ using System.Collections;
 
 
 // TODO: 
-// volendo, se un oggetto è già nella lista salvati, ignora i nuovi bounding 
-// box relativi
-// ma prima, per fare questo SERVE: 
-// made the anchored objects clickable!!!!!!!!!!!!!
-// in placeholograms, fai che se la lsita di oggetti salvati è > 0 usa anche 
-// quella per determinare i click (se un oggetto c'è, riprendilo dai saved 
-// anchors, invece di posizionare un'altra ancora)
-// Move the anchored objects in a separate list, used by the AnchorCreators. 
-// Otherwise the anchors are resetted at each update, because of the
-// boxSavedOutlines.Clear(),
-// Do not place visualization at click, bu use a placeholder, and use a 
-// panel to define the rule element. After the element is saved, the 
-// placeholder is updated with these new info, or discarded.
-// maybe: use a dictionary instead of lists for store saved bounding boxes
+// Save anchor map
 
 /**
  * Get the active detector (YOLOV2 or V3)
@@ -40,6 +27,8 @@ public class PhoneARCamera : MonoBehaviour
     [SerializeField]
     ARCameraManager m_CameraManager;
     
+    public MainMenuScript m_MainMenuCanvas;
+
     private Dictionary<string, BoundingBox> _detectableDict = new Dictionary<string, BoundingBox>();
     
     public Dictionary<string, BoundingBox> detectableDict
@@ -173,9 +162,12 @@ public class PhoneARCamera : MonoBehaviour
         ScreenLog.Log("DEBUG: onRefresh, removing anchors and boundingboxes");
         localization = false;
         staticNum = 0;
+        // TODO: JUST FOR TESTING, REMOVE
+        /*
         // clear bounding box containers
         boxSavedOutlines.Clear();
         boxOutlines.Clear();
+        */
         // clear anchor
         AnchorCreator anchorCreator = FindObjectOfType<AnchorCreator>(); 
         anchorCreator.RemoveAllAnchors();
@@ -186,6 +178,11 @@ public class PhoneARCamera : MonoBehaviour
          */ 
         unsafe void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs)
         {
+        m_MainMenuCanvas = GameObject.Find("MainMenuCanvas").GetComponent<MainMenuScript>();
+        if (m_MainMenuCanvas.getDetectObjects() == false)
+        {
+            return;
+        }
         // Attempt to get the latest camera image. If this method succeeds,
         // it acquires a native resource that must be disposed (see below).
         XRCpuImage image;
@@ -254,6 +251,11 @@ public class PhoneARCamera : MonoBehaviour
 
     public void OnGUI()
     {
+        m_MainMenuCanvas = GameObject.Find("MainMenuCanvas").GetComponent<MainMenuScript>();
+        if (m_MainMenuCanvas.getDetectObjects()==false)
+        {
+            return;
+        }
         if (NewElementScript.getIsOpen() || EditElementScript.getIsOpen())
         {
             return; // Do not localize if a GUI element is active
@@ -287,8 +289,8 @@ public class PhoneARCamera : MonoBehaviour
     }
 
     // Check if the newOutline has higher confidence of at last 1 saved label
-    // TODO: it is useless to use a list if it is planned to only store 1 
-    // class label at time. See which struct to eventually use (eventually)
+    // TODO: it is not optimal to use a list if it is planned to only store 1 
+    // class label at time. See which struct use instead (eventually)
     private bool checkHigherConfidence(BoundingBox newOutline)
     {
         foreach (var outline in this.boxSavedOutlines)
@@ -333,7 +335,7 @@ public class PhoneARCamera : MonoBehaviour
     }
     
     // Remove items if they are not on the detection list and the camera moved 
-    // more than X pixels (TODO)
+    // more than X pixels (eventually to do if needed)
     /*
     private void removeNoMoreVisibleItems(List<BoundingBox>boundingBoxList)
     {
